@@ -59,7 +59,7 @@
 
 /* enums */
 enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
-enum { SchemeNorm, SchemeSel }; /* color schemes */
+enum { SchemeNorm, SchemeSel, SchemeWarn, SchemeUrgent }; /* color schemes */
 enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
        NetWMFullscreen, NetActiveWindow, NetWMWindowType,
        NetWMWindowTypeDialog, NetClientList, NetLast }; /* EWMH atoms */
@@ -147,6 +147,7 @@ static int applysizehints(Client *c, int *x, int *y, int *w, int *h, int interac
 static void arrange(Monitor *m);
 static void arrangemon(Monitor *m);
 static void attach(Client *c);
+static void attachbottom(Client *c);
 static void attachstack(Client *c);
 static void buttonpress(XEvent *e);
 static void checkotherwm(void);
@@ -406,6 +407,15 @@ attach(Client *c)
 {
 	c->next = c->mon->clients;
 	c->mon->clients = c;
+}
+
+void
+attachbottom(Client *c)
+{
+	Client **tc;
+	c->next = NULL;
+	for (tc = &c->mon->clients; *tc; tc = &(*tc)->next);
+	*tc = c;
 }
 
 void
@@ -698,10 +708,14 @@ dirtomon(int dir)
 void
 drawbar(Monitor *m)
 {
-	int x, w, tw = 0;
+	int x, w, sw = 0, tw, mw, ew = 0;
 	int boxs = drw->fonts->h / 9;
 	int boxw = drw->fonts->h / 6 + 2;
-	unsigned int i, occ = 0, urg = 0;
+	unsigned int i, occ = 0, urg = 0, n = 0;
+	char *ts = stext;
+	char *tp = stext;
+	int tx = 0;
+	char ctmp;
 	Client *c;
 
 	if (!m->showbar)
@@ -710,11 +724,24 @@ drawbar(Monitor *m)
 	/* draw status first so it can be overdrawn by tags later */
 	if (m == selmon) { /* status is only drawn on selected monitor */
 		drw_setscheme(drw, scheme[SchemeNorm]);
-		tw = TEXTW(stext) - lrpad + 2; /* 2px right padding */
-		drw_text(drw, m->ww - tw, 0, tw, bh, 0, stext, 0);
+		sw = TEXTW(stext) - lrpad + 2; /* 2px right padding */
+		//drw_text(drw, m->ww - sw, 0, sw, bh, 0, stext, 0);
+		while (1) {
+			if ((unsigned int)*ts > LENGTH(colors)) { ts++; continue ; }
+			ctmp = *ts;
+			*ts = '\0';
+			drw_text(drw, m->ww - sw + tx, 0, sw - tx, bh, 0, tp, 0);
+			tx += TEXTW(tp) -lrpad;
+			if (ctmp == '\0') { break; }
+			drw_setscheme(drw, scheme[(unsigned int)(ctmp-1)]);
+			*ts = ctmp;
+			tp = ++ts;
+		}
 	}
 
 	for (c = m->clients; c; c = c->next) {
+		if (ISVISIBLE(c))
+			n++;
 		occ |= c->tags;
 		if (c->isurgent)
 			urg |= c->tags;
@@ -734,16 +761,40 @@ drawbar(Monitor *m)
 	drw_setscheme(drw, scheme[SchemeNorm]);
 	x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->ltsymbol, 0);
 
-	if ((w = m->ww - tw - x) > bh) {
-		if (m->sel) {
-			drw_setscheme(drw, scheme[m == selmon ? SchemeSel : SchemeNorm]);
-			drw_text(drw, x, 0, w, bh, lrpad / 2, m->sel->name, 0);
-			if (m->sel->isfloating)
-				drw_rect(drw, x + boxs, boxs, boxw, boxw, m->sel->isfixed, 0);
-		} else {
-			drw_setscheme(drw, scheme[SchemeNorm]);
-			drw_rect(drw, x, 0, w, bh, 1, 1);
+	if ((w = m->ww - sw - x) > bh) {
+		if (n > 0) {
+			tw = TEXTW(m->sel->name);
+			mw = (tw >= w || n == 1) ? 0 : (w - tw) / (n - 1);
+
+			i = 0;
+			for (c = m->clients; c; c = c->next) {
+				if (!ISVISIBLE(c) || c == m->sel)
+					continue;
+				tw = TEXTW(c->name);
+				if(tw < mw)
+					ew += (mw - tw);
+				else
+					i++;
+			}
+			if (i > 0)
+				mw += ew / i;
+
+			for (c = m->clients; c; c = c->next) {
+				if (!ISVISIBLE(c))
+					continue;
+				tw = MIN(m->sel == c ? w : mw, TEXTW(c->name));
+
+				drw_setscheme(drw, scheme[m->sel == c ? SchemeSel : SchemeNorm]);
+				if (tw > 0) /* trap special handling of 0 in drw_text */
+					drw_text(drw, x, 0, tw, bh, lrpad / 2, c->name, 0);
+				if (c->isfloating)
+					drw_rect(drw, x + boxs, boxs, boxw, boxw, c->isfixed, 0);
+				x += tw;
+				w -= tw;
+			}
 		}
+		drw_setscheme(drw, scheme[SchemeNorm]);
+		drw_rect(drw, x, 0, w, bh, 1, 1);
 	}
 	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
 }
@@ -1074,7 +1125,7 @@ manage(Window w, XWindowAttributes *wa)
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
 	if (c->isfloating)
 		XRaiseWindow(dpy, c->win);
-	attach(c);
+	attachbottom(c);
 	attachstack(c);
 	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32, PropModeAppend,
 		(unsigned char *) &(c->win), 1);
@@ -1427,7 +1478,7 @@ sendmon(Client *c, Monitor *m)
 	detachstack(c);
 	c->mon = m;
 	c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
-	attach(c);
+	attachbottom(c);
 	attachstack(c);
 	focus(NULL);
 	arrange(NULL);
@@ -1915,7 +1966,7 @@ updategeom(void)
 				m->clients = c->next;
 				detachstack(c);
 				c->mon = mons;
-				attach(c);
+				attachbottom(c);
 				attachstack(c);
 			}
 			if (m == selmon)
