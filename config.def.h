@@ -23,24 +23,26 @@ static const char * colors [][3] = {
 };
 
 /* tagging */
-static const char * tags [] = { ">_", "web", "docs", "play", "&c" };
+static const char * tags [] = { ">_", "web", "docs", "comms", "play" };
 
 static const Rule rules [] = {
-    /* class         instance   title  tagmask  floating  monitor */
-    { "st-256color", NULL,      NULL,  1 << 0,  False,    -1      },
-    { "Firefox",     NULL,      NULL,  1 << 1,  False,    -1      },
-    { "Zathura",     NULL,      NULL,  1 << 2,  False,    -1      },
-    { "Gimp",        NULL,      NULL,  1 << 2,  False,    -1      },
-    { "Inkscape",    NULL,      NULL,  1 << 2,  False,    -1      },
-    { "libreoffice", NULL,      NULL,  1 << 2,  False,    -1      },
-    { "Steam",       NULL,      NULL,  1 << 3,  False,    -1      },
-    { "mpv",         NULL,      NULL,  1 << 3,  False,    -1      },
+    /* class            instance   title  tagmask  floating  monitor */
+    { "st-256color",    NULL,      NULL,  1 << 0,  False,    -1      },
+    { "librewolf",      NULL,      NULL,  1 << 1,  False,    -1      },
+    { "Zathura",        NULL,      NULL,  1 << 2,  False,    -1      },
+    { "Gimp",           NULL,      NULL,  1 << 2,  False,    -1      },
+    { "Inkscape",       NULL,      NULL,  1 << 2,  False,    -1      },
+    { "libreoffice",    NULL,      NULL,  1 << 2,  False,    -1      },
+    { "Slack",          NULL,      NULL,  1 << 3,  False,    -1      },
+    { "signal-desktop", NULL,      NULL,  1 << 3,  False,    -1      },
+    { "Steam",          NULL,      NULL,  1 << 4,  False,    -1      },
+    { "mpv",            NULL,      NULL,  1 << 4,  False,    -1      },
 
-    { NULL,          ">_",      NULL,  1 << 0,  False,    -1      },
-    { NULL,          "web",     NULL,  1 << 1,  False,    -1      },
-    { NULL,          "docs",    NULL,  1 << 2,  False,    -1      },
-    { NULL,          "play",    NULL,  1 << 3,  False,    -1      },
-    { NULL,          "&c",      NULL,  1 << 4,  False,    -1      }
+    { NULL,             ">_",      NULL,  1 << 0,  False,    -1      },
+    { NULL,             "web",     NULL,  1 << 1,  False,    -1      },
+    { NULL,             "docs",    NULL,  1 << 2,  False,    -1      },
+    { NULL,             "comms",   NULL,  1 << 3,  False,    -1      },
+    { NULL,             "play",    NULL,  1 << 4,  False,    -1      }
 };
 
 /* layout(s) */
