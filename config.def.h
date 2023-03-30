@@ -28,7 +28,7 @@ static const char * tags [] = { ">_", "web", "docs", "comms", "play" };
 static const Rule rules [] = {
     /* class            instance   title  tagmask  floating  monitor */
     { "st-256color",    NULL,      NULL,  1 << 0,  False,    -1      },
-    { "librewolf",      NULL,      NULL,  1 << 1,  False,    -1      },
+    { "LibreWolf",      NULL,      NULL,  1 << 1,  False,    -1      },
     { "Zathura",        NULL,      NULL,  1 << 2,  False,    -1      },
     { "Gimp",           NULL,      NULL,  1 << 2,  False,    -1      },
     { "Inkscape",       NULL,      NULL,  1 << 2,  False,    -1      },
