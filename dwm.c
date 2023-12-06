@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <X11/cursorfont.h>
@@ -2064,10 +2065,30 @@ updatestatus(void)
 void
 updatetitle(Client *c)
 {
+	const char * instance = NULL;
+	XClassHint chint = { NULL, NULL };
+
+	XGetClassHint(dpy, c->win, &chint);
+	instance = chint.res_class ? chint.res_class : broken;
+
 	if (!gettextprop(c->win, netatom[NetWMName], c->name, sizeof c->name))
 		gettextprop(c->win, XA_WM_NAME, c->name, sizeof c->name);
+
+	if ( instance != broken && strlen(instance) < strlen(c->name) ) {
+		strcpy(c->name, instance);
+	}
+
 	if (c->name[0] == '\0') /* hack to mark broken clients */
 		strcpy(c->name, broken);
+
+	for ( char * ch = c->name; *ch; ++ch ) {
+		*ch = tolower(*ch);
+	}
+
+	if (chint.res_class)
+		XFree(chint.res_class);
+	if (chint.res_name)
+		XFree(chint.res_name);
 }
 
 void
